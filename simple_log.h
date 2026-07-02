@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include <ctime>
+#include <sstream>
 #include "logfile.h"
 inline void PrintLog(LogLevel lv, const char* file, int line, const char* fmt, ...)
 {
@@ -42,9 +43,13 @@ inline void PrintLog(LogLevel lv, const char* file, int line, const char* fmt, .
     if (written < 0) {
         content[0] = '\0';
     }
-
     LogFile logfile;
-    logfile.write(content);
+    std::ostringstream oss;
+    oss << time_buf
+        << " [" << LevelToStr(lv) << "] "
+        << file << ":" << line
+        << " | " << content;
+    logfile.write(oss.str().c_str());
 }
 
 #define LOG_DEBUG(...) PrintLog(LogLevel::DEBUG, __FILE__, __LINE__, __VA_ARGS__)

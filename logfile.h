@@ -23,8 +23,10 @@ public:
         if (fp)
         {
             fputs(str, fp);
+            fputs("\n",fp);
             fflush(fp); // 立刻刷盘
         }
+
     }
 };
 #endif
