@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include <ctime>
-
+#include "logfile.h"
 inline void PrintLog(LogLevel lv, const char* file, int line, const char* fmt, ...)
 {
     time_t now = time(nullptr);
@@ -43,12 +43,8 @@ inline void PrintLog(LogLevel lv, const char* file, int line, const char* fmt, .
         content[0] = '\0';
     }
 
-    std::printf("%s [%s] %s:%d | %s\n",
-        time_buf,
-        LevelToStr(lv).c_str(),
-        file,
-        line,
-        content);
+    LogFile logfile;
+    logfile.write(content);
 }
 
 #define LOG_DEBUG(...) PrintLog(LogLevel::DEBUG, __FILE__, __LINE__, __VA_ARGS__)
