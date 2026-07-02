@@ -6,7 +6,8 @@
 #include <cstdarg>
 #include <ctime>
 #include <sstream>
-#include "logfile.h"
+#include <cstring>
+#include "async_logger.h"
 inline void PrintLog(LogLevel lv, const char* file, int line, const char* fmt, ...)
 {
     time_t now = time(nullptr);
@@ -43,13 +44,12 @@ inline void PrintLog(LogLevel lv, const char* file, int line, const char* fmt, .
     if (written < 0) {
         content[0] = '\0';
     }
-    LogFile logfile;
     std::ostringstream oss;
     oss << time_buf
         << " [" << LevelToStr(lv) << "] "
         << file << ":" << line
         << " | " << content;
-    logfile.write(oss.str().c_str());
+    AsyncLogger::Instance().append(oss.str());
 }
 
 #define LOG_DEBUG(...) PrintLog(LogLevel::DEBUG, __FILE__, __LINE__, __VA_ARGS__)
