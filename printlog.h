@@ -1,5 +1,5 @@
-#ifndef SIMPLE_LOG_H
-#define SIMPLE_LOG_H
+#ifndef printlog_H
+#define printlog_H
 
 #include "LogLevel.h"
 #include <cstdio>

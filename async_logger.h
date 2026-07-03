@@ -10,13 +10,14 @@
 #include <atomic>
 #include <utility>
 #include <chrono>
-
+#include "logfile.h"
 class AsyncLogger {
 public:
-    AsyncLogger(const std::string& path = "log.txt")
-        : fp(nullptr), exit_flag(false), lastfflush(std::chrono::system_clock::now())
+    AsyncLogger(std::string ddir="log/",std::string bbasename="log")
+        : fp(nullptr), exit_flag(false), lastfflush(std::chrono::system_clock::now()),
+        dir(ddir),basename(bbasename)
     {
-        fp = std::fopen(path.c_str(), "a");
+        fp = &(logfile::Instance(ddir,bbasename));
         worker = std::thread(&AsyncLogger::run, this);
     }
 
@@ -25,7 +26,6 @@ public:
         exit_flag.store(true, std::memory_order_relaxed);
         cv.notify_all();
         if (worker.joinable()) worker.join();
-        if (fp) std::fclose(fp);
     }
 
     // Non-copyable
@@ -41,9 +41,9 @@ public:
         cv.notify_one();
     }
 
-    static AsyncLogger& Instance()
+    static AsyncLogger& Instance(std::string dir="log/",std::string basename="log")
     {
-        static AsyncLogger inst;
+        static AsyncLogger inst(dir,basename);
         return inst;
     }
 
@@ -51,7 +51,7 @@ private:
     void run()
     {
         std::unique_lock<std::mutex> lk(m);
-        // 批量阈值200，定时10秒强制刷盘
+        // 批量阈值200，定时200ms强制刷盘
         constexpr size_t BATCH_MAX = 200;
         constexpr auto FLUSH_DUR = std::chrono::milliseconds(200);
 
@@ -77,8 +77,7 @@ private:
                     buf += line;
                     buf += '\n';
                 }
-                std::fputs(buf.c_str(), fp);
-                std::fflush(fp);
+                fp->write(buf);
             }
 
             lk.lock();
@@ -86,7 +85,9 @@ private:
         }
     }
 
-    FILE* fp;
+    logfile* fp;
+    std::string dir="log/";
+    std::string basename="log";
     std::thread worker;
     std::mutex m;
     std::condition_variable cv;
