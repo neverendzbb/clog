@@ -8,13 +8,13 @@
 #include <string>
 #include <cstdio>
 #include <atomic>
-#include <memory>
 #include <utility>
+#include <chrono>
 
 class AsyncLogger {
 public:
     AsyncLogger(const std::string& path = "log.txt")
-        : fp(nullptr), exit_flag(false)
+        : fp(nullptr), exit_flag(false), lastfflush(std::chrono::system_clock::now())
     {
         fp = std::fopen(path.c_str(), "a");
         worker = std::thread(&AsyncLogger::run, this);
@@ -51,19 +51,38 @@ private:
     void run()
     {
         std::unique_lock<std::mutex> lk(m);
-        while (!exit_flag.load(std::memory_order_relaxed) || !queue.empty()) {
-            cv.wait(lk, [&]() { return exit_flag.load(std::memory_order_relaxed) || !queue.empty(); });
-            while (!queue.empty()) {
-                std::string s = std::move(queue.front());
-                queue.pop_front();
-                lk.unlock();
-                if (fp) {
-                    std::fputs(s.c_str(), fp);
-                    std::fputs("\n", fp);
-                    std::fflush(fp);
+        // 批量阈值200，定时10秒强制刷盘
+        constexpr size_t BATCH_MAX = 200;
+        constexpr auto FLUSH_DUR = std::chrono::milliseconds(200);
+
+        while (!exit_flag.load(std::memory_order_relaxed) || !queue.empty())
+        {
+            // 最多等待10s，避免空队列忙等
+            cv.wait_for(lk, FLUSH_DUR, [&]() {
+                return exit_flag.load(std::memory_order_relaxed) || queue.size() >= BATCH_MAX;
+            });
+
+            // 一次性交换队列，快速释放锁
+            std::deque<std::string> batch;
+            std::swap(batch, queue);
+            lk.unlock();
+
+            if (fp && !batch.empty())
+            {
+                std::string buf;
+                // 预分配内存减少扩容
+                buf.reserve(batch.size() * 256);
+                for (auto& line : batch)
+                {
+                    buf += line;
+                    buf += '\n';
                 }
-                lk.lock();
+                std::fputs(buf.c_str(), fp);
+                std::fflush(fp);
             }
+
+            lk.lock();
+            lastfflush = std::chrono::system_clock::now();
         }
     }
 
@@ -73,6 +92,7 @@ private:
     std::condition_variable cv;
     std::deque<std::string> queue;
     std::atomic<bool> exit_flag;
+    std::chrono::system_clock::time_point lastfflush;
 };
 
 #endif
