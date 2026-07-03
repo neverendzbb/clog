@@ -78,6 +78,7 @@ private:
                     buf += '\n';
                 }
                 fp->write(buf);
+                fp->flush();
             }
 
             lk.lock();

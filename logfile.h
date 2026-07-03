@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <iostream>
 #include <sys/stat.h>
+#include <string>
 class logfile{
 private:
     FILE* m_curFd=nullptr;          // 仅当前正在写入的日志文件
@@ -115,19 +116,25 @@ public:
                 continue;
             }
             std::fputs(s1.c_str(), m_curFd);
-            std::fflush(m_curFd);
-            m_curSize+=s1.size();
+            m_curSize += s1.size();
             splitsize();
-            if(!m_curFd){
+            if (!m_curFd) {
                 return false;
             }
-            s=s.substr(lastLinePos+1);
-            sizes=s.size();
+            s = s.substr(lastLinePos + 1);
+            sizes = s.size();
         }
         std::fputs(s.c_str(), m_curFd);
-        m_curSize+=s.size();
-        std::fflush(m_curFd);
+        m_curSize += s.size();
         return true;
+    }
+
+    bool flush()
+    {
+        if (m_curFd) {
+            return std::fflush(m_curFd) == 0;
+        }
+        return false;
     }
 };
 #endif
