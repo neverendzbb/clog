@@ -16,11 +16,11 @@ struct RabbitMQConfig {
     // ------------------------------------------------------------------
     // 连接参数
     // ------------------------------------------------------------------
-    std::string host = "223.4.145.218";   // broker 地址
+    std::string host = "***";   // broker 地址
     int         port = 5672;          // AMQP 端口（管理端口通常是 15672）
     std::string vhost = "/";          // 虚拟主机；不同业务可用不同 vhost 隔离
-    std::string user = "admin";       // 用户名；guest 默认只能从 localhost 登录
-    std::string password = "123456";   // 密码
+    std::string user = "***";       // 用户名；guest 默认只能从 localhost 登录
+    std::string password = "***";   // 密码
 
     // 心跳间隔（秒）。0 表示关闭。
     // 开启后会周期性收发心跳，便于及时发现“假死”的连接；
