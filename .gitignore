@@ -1,0 +1,10 @@
+.vscode/
+main
+main_test
+log/
+*.o
+*.out
+epoll_logs/
+output/
+mq_publisher
+mq_consumer
